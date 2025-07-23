@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<title>오버워치 그라데이션 변환기</title>
+<title>오버워치 그라데이션 변환기 (투명도 포함)</title>
 <style>
   body {
     background: #fff;
@@ -15,7 +15,7 @@
     flex-direction: column;
     align-items: flex-start;
     justify-content: flex-start;
-    max-width: 500px;
+    max-width: 520px;
   }
   label {
     font-weight: bold;
@@ -30,6 +30,21 @@
     border: 1px solid #ccc;
     margin-bottom: 16px;
     cursor: pointer;
+  }
+  input[type="range"] {
+    width: 200px;
+    margin-bottom: 20px;
+  }
+  .alpha-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .alpha-value {
+    width: 40px;
+    text-align: right;
+    font-family: monospace;
   }
   textarea {
     width: 360px;
@@ -54,15 +69,37 @@
     font-family: monospace, sans-serif;
   }
 </style>
+
+<!-- Google Analytics 시작 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-6HFR0VGLBR"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-6HFR0VGLBR');
+</script>
+<!-- Google Analytics 끝 -->
+
 </head>
 <body>
 
 <form id="fom" onsubmit="return false;">
   <label for="startColor">시작 색상 선택</label>
   <input type="color" id="startColor" name="startColor" value="#FF0000" />
+  <div class="alpha-container">
+    <label for="startAlpha">투명도 (시작):</label>
+    <input type="range" id="startAlpha" min="0" max="255" value="255" />
+    <span class="alpha-value" id="startAlphaValue">FF</span>
+  </div>
 
   <label for="endColor">끝 색상 선택</label>
   <input type="color" id="endColor" name="endColor" value="#FFFFFF" />
+  <div class="alpha-container">
+    <label for="endAlpha">투명도 (끝):</label>
+    <input type="range" id="endAlpha" min="0" max="255" value="255" />
+    <span class="alpha-value" id="endAlphaValue">FF</span>
+  </div>
 
   <label for="inputText">텍스트 입력</label>
   <textarea id="inputText" placeholder="그라데이션을 적용할 텍스트를 입력하세요.">사랑해 &lt;3 마음</textarea>
@@ -88,7 +125,7 @@ function lerp(start, end, t) {
   return Math.round(start + (end - start)*t);
 }
 
-function createGradientText(text, startColor, endColor) {
+function createGradientText(text, startColor, endColor, startAlpha, endAlpha) {
   let result = '';
   for(let i=0; i<text.length; i++) {
     if (text[i] === '<' && text[i+1] === '3') {
@@ -100,7 +137,8 @@ function createGradientText(text, startColor, endColor) {
     const r = lerp(startColor.r, endColor.r, t);
     const g = lerp(startColor.g, endColor.g, t);
     const b = lerp(startColor.b, endColor.b, t);
-    result += `<FG${toHex(r)}${toHex(g)}${toHex(b)}FF>${text[i]}`;
+    const a = lerp(startAlpha, endAlpha, t);
+    result += `<FG${toHex(r)}${toHex(g)}${toHex(b)}${toHex(a)}>${text[i]}`;
   }
   return result;
 }
@@ -108,7 +146,12 @@ function createGradientText(text, startColor, endColor) {
 function updateGradient() {
   const startHex = document.getElementById('startColor').value;
   const endHex = document.getElementById('endColor').value;
+  const startAlpha = parseInt(document.getElementById('startAlpha').value);
+  const endAlpha = parseInt(document.getElementById('endAlpha').value);
   const text = document.getElementById('inputText').value.trim();
+
+  document.getElementById('startAlphaValue').textContent = toHex(startAlpha);
+  document.getElementById('endAlphaValue').textContent = toHex(endAlpha);
 
   if(text.length === 0) {
     document.getElementById('result').textContent = '';
@@ -118,13 +161,14 @@ function updateGradient() {
   const startColor = hexToRgb(startHex);
   const endColor = hexToRgb(endHex);
 
-  const converted = createGradientText(text, startColor, endColor);
+  const converted = createGradientText(text, startColor, endColor, startAlpha, endAlpha);
   document.getElementById('result').textContent = converted;
 }
 
-document.getElementById('startColor').addEventListener('input', updateGradient);
-document.getElementById('endColor').addEventListener('input', updateGradient);
-document.getElementById('inputText').addEventListener('input', updateGradient);
+const inputs = ['startColor', 'endColor', 'startAlpha', 'endAlpha', 'inputText'];
+inputs.forEach(id => {
+  document.getElementById(id).addEventListener('input', updateGradient);
+});
 
 // 초기 출력
 updateGradient();
